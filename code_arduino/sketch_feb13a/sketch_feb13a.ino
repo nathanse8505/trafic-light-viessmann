@@ -26,6 +26,10 @@ const uint8_t RED_WIRE = 2;
 const uint8_t GREEN_WIRE_PED = 0;
 const uint8_t RED_WIRE_PED = 1;
 
+int8_t seq = 1;
+long timer_btw_sq = 0;
+const uint32_t TIME_SEQ = 5000;
+const uint32_t TIME_BTW_SEQ = 1500;
 
 const int8_t NUMBER_OF_CROSSWALK = 2;
 uint8_t CROSSWALKS[NUMBER_OF_CROSSWALK] = {CROSSWALK_IO_E1,CROSSWALK_IO_E2};
@@ -54,28 +58,28 @@ void BLINK_CROSSWALK(const uint8_t *crosswalk_io, uint8_t count) {
 
 
 
-void RED_LIGHT_GREEN_PEDESTRIAN(uint8_t ch_traffic_light[]){
+void RED_LIGHT_GREEN_PEDESTRIAN(uint8_t* ch_traffic_light){
    pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[RED_WIRE], 0,  PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
 
 }
 
-void RED_LIGHT_RED_PEDESTRIAN(uint8_t ch_traffic_light[]){
+void RED_LIGHT_RED_PEDESTRIAN(uint8_t* ch_traffic_light){
    pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[RED_WIRE], 0,  PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
 
 }
 
-void YELLOW_LIGHT_RED_PEDESTRIAN(uint8_t ch_traffic_light[]){
+void YELLOW_LIGHT_RED_PEDESTRIAN(uint8_t* ch_traffic_light){
    pca.setPWM(ch_traffic_light[GREEN_WIRE], 0,  0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[RED_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
   
 }
 
-void YELLOW_LIGHT(uint8_t ch_traffic_light[]){
+void YELLOW_LIGHT(uint8_t* ch_traffic_light){
    pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
    pca.setPWM(ch_traffic_light[RED_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
@@ -83,38 +87,38 @@ void YELLOW_LIGHT(uint8_t ch_traffic_light[]){
 }
 
 
-void GREEN_LIGHT_GREEN_PEDESTRIAN(uint8_t ch_traffic_light[]){
+void GREEN_LIGHT_GREEN_PEDESTRIAN(uint8_t* ch_traffic_light){
   pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0,0);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[RED_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
 }
 
-void GREEN_LIGHT_RED_PEDESTRIAN(uint8_t ch_traffic_light[]){
+void GREEN_LIGHT_RED_PEDESTRIAN(uint8_t* ch_traffic_light){
   pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[RED_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
 }
 
 
-void BLANK_LIGHT(uint8_t ch_traffic_light[]){
+void BLANK_LIGHT(uint8_t* ch_traffic_light){
   pca.setPWM(ch_traffic_light[GREEN_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[YELLOW_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_traffic_light[RED_WIRE], 0, 0);   // ON à 0, OFF à v => duty proportionnel
 }
 
-void GREEN_LIGHT_PEDESTRIAN(uint8_t ch_pedestrian[]){
+void GREEN_LIGHT_PEDESTRIAN(uint8_t* ch_pedestrian){
   pca.setPWM(ch_pedestrian[GREEN_WIRE_PED], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_pedestrian[RED_WIRE_PED], 0, 0);   // ON à 0, OFF à v => duty proportionnel
 }
 
-void RED_LIGHT_PEDESTRIAN(uint8_t ch_pedestrian[]){
+void RED_LIGHT_PEDESTRIAN(uint8_t* ch_pedestrian){
   pca.setPWM(ch_pedestrian[GREEN_WIRE_PED], 0, 0);   // ON à 0, OFF à v => duty proportionnel
   pca.setPWM(ch_pedestrian[RED_WIRE_PED], 0, PWM_MAX);   // ON à 0, OFF à v => duty proportionnel
 }
 
 
 
-void SEQ_1(){
+void SEQ_1_1(){
    RED_LIGHT_GREEN_PEDESTRIAN(TRAFFIC_LIGHT_A);
    RED_LIGHT_PEDESTRIAN(PEDESTRIANS_A3_A4);
 
@@ -124,6 +128,17 @@ void SEQ_1(){
    RED_LIGHT_GREEN_PEDESTRIAN(TRAFFIC_LIGHT_C);
 
    RED_LIGHT_RED_PEDESTRIAN(TRAFFIC_LIGHT_D);
+
+}
+
+void SEQ_1_2(){
+   RED_LIGHT_RED_PEDESTRIAN(TRAFFIC_LIGHT_A);
+   YELLOW_LIGHT(TRAFFIC_LIGHT_A);
+
+   YELLOW_LIGHT_RED_PEDESTRIAN(TRAFFIC_LIGHT_B);
+   
+   RED_LIGHT_RED_PEDESTRIAN(TRAFFIC_LIGHT_C);
+   YELLOW_LIGHT(TRAFFIC_LIGHT_C);
 
 }
 
@@ -147,5 +162,28 @@ void setup() {
 
 
 void loop() {
-BLINK_CROSSWALK(CROSSWALKS, NUMBER_OF_CROSSWALK);
+  BLINK_CROSSWALK(CROSSWALKS, NUMBER_OF_CROSSWALK);
+  if(seq == 1 && (millis() - timer_btw_sq >= TIME_SEQ)){
+    SEQ_1_1();
+    seq++;
+    timer_btw_sq = millis();
+
+  }
+
+  if(seq == 2 && (millis() - timer_btw_sq <= TIME_BTW_SEQ)){
+    SEQ_1_2();
+  }
+  else{
+    seq++;
+    timer_btw_sq = millis();
+  }
+
+  /*if(seq == 3 && (millis() - timer_btw_sq <= TIME_SEQ)){
+    SEQ_2_1();
+    eq++;
+    timer_btw_sq = millis();
+  }
+  */
+
+
 }
