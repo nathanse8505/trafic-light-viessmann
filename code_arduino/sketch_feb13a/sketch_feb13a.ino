@@ -15,11 +15,13 @@
 #define TRAFFIC_Y_IO_D A0
 #define TRAFFIC_R_IO_D A1
 
-#define PED_G_IO_A3_A4 A2
-#define PED_R_IO_A3_A4 A3
+#define PED_R_IO_A3_A4 A2
+#define PED_G_IO_A3_A4 A3
 
-#define PED_G_IO_B3_B4 A4
-#define PED_R_IO_B3_B4 A5
+
+#define PED_R_IO_B3_B4 A4
+#define PED_G_IO_B3_B4 A5
+
 
 
 const uint8_t TRAFFIC_LIGHT_A[3] = {TRAFFIC_G_IO_A,TRAFFIC_Y_IO_A,TRAFFIC_R_IO_A};// pedestrian A1 connected to pedestrian A2
@@ -48,16 +50,20 @@ const uint16_t CROSSWALK_DELAY = 1000;
 unsigned long crosswalk_timer = 0;
 bool crosswalk_state = false; // false=LOW, true=HIGH
 ///////////////////////////////////
-
-long time_multiplexing = 0;
 const int INTERVAL_MULTEPLEXING = 5;//in ms
+long time_multiplexing_1 = 0;
+long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
+
+bool M = true;
 
 
-long time_blink_green = 0;
-long time_blink = 0;
+
+const unsigned long BLINK_GREEN_ON_MS  = 500;  // durée phase ON
+const unsigned long BLINK_GREEN_OFF_MS = 500;  // durée phase OFF
+bool blink_phase_on = true;          // true=phase ON, false=phase OFF
+unsigned long time_blink_phase = 0;  // début de la phase actuelle
 const int TIME_TO_BLINK = 2000;
-const int BLINK_GREEN = 200;
-bool light_green_state = true;
+
 void INIT_CROSSWALK(){
   crosswalk_timer = millis();
   crosswalk_state = false;
@@ -146,38 +152,116 @@ void GREEN_LIGHT_PED_O(uint8_t* ch_traffic_light){
   digitalWrite(ch_traffic_light[RED_WIRE_PED], LOW);
 }
 
-void BLINK_GREEN_LIGHT(uint8_t* ch_traffic_light){
+
+
+void BLINK_GREEN_LIGHT_2PHASE(uint8_t* ch_traffic_light) {
   INIT_G_pinmode(ch_traffic_light);
-  if (millis() - time_blink >= BLINK_GREEN) {
-    time_blink = millis();
-    light_green_state = !light_green_state;
-    digitalWrite(ch_traffic_light[GREEN_WIRE], light_green_state ? HIGH : LOW);
+
+  unsigned long now = millis();
+  unsigned long phase_duration = blink_phase_on ? BLINK_GREEN_ON_MS : BLINK_GREEN_OFF_MS;
+
+  // Changement de phase
+  if (now - time_blink_phase >= phase_duration) {
+    time_blink_phase = now;
+    blink_phase_on = !blink_phase_on;
   }
+
+  // Appliquer l’état correspondant à la phase
+  digitalWrite(ch_traffic_light[GREEN_WIRE], blink_phase_on ? HIGH : LOW);
 }
 
 
-void SEQ_1_1(){
-  
-  if(millis() - time_multiplexing > INTERVAL_MULTEPLEXING){
-    GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
-    RED_LIGHT_PED(TRAFFIC_LIGHT_B);
-    GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
-    RED_LIGHT_PED(TRAFFIC_LIGHT_D);
-    time_multiplexing = millis();
-  }
-  else{
-    RED_LIGHT(TRAFFIC_LIGHT_A);
-    GREEN_LIGHT(TRAFFIC_LIGHT_B);
-    RED_LIGHT(TRAFFIC_LIGHT_C);
-    RED_LIGHT(TRAFFIC_LIGHT_D);
+void SEQ_1_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
   }
 
+  // ===== Toujours actifs (dans les 2 phases) =====
   RED_LIGHT_PED_O(PEDESTRIANS_A3_A4);
   GREEN_LIGHT_PED_O(PEDESTRIANS_B3_B4);
 }
 
-
 void SEQ_1_2(){
+   unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      BLINK_GREEN_LIGHT_2PHASE(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+
+  // ===== Toujours actifs (dans les 2 phases) =====
+  RED_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  GREEN_LIGHT_PED_O(PEDESTRIANS_B3_B4);
+    
+}
+
+/*
+
+
+void SEQ_1_3(){
   if(millis() - time_multiplexing > INTERVAL_MULTEPLEXING){
     RED_LIGHT_RED_PED(TRAFFIC_LIGHT_A);
     RED_LIGHT_PED(TRAFFIC_LIGHT_B);
@@ -212,7 +296,7 @@ void SEQ_2_1(){
 }
 
 
-
+*/
 
 
 void setup() {
@@ -250,31 +334,25 @@ void setup() {
 
 void loop() {
   BLINK_CROSSWALK(CROSSWALK_IO_E1_E2);
-
+ 
   if(seq == 1){
-    if(millis() - timer_btw_sq >= TIME_SEQ){
-      
-      if (millis() - time_blink_green <= TIME_TO_BLINK){
-        BLINK_GREEN_LIGHT(TRAFFIC_LIGHT_B);
-      }
-      else{
-        seq++;
-        timer_btw_sq = millis();
-      }
-    }
-    else{
+    if(millis() - timer_btw_sq <= TIME_SEQ){
       SEQ_1_1();
-      time_blink_green = millis();
+    }    
+    else{
+      seq++;
+      timer_btw_sq = millis();
     }
   }
 
   if(seq == 2){
     SEQ_1_2();
-    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+    if(millis() - timer_btw_sq > TIME_TO_BLINK){
       seq++;
       timer_btw_sq = millis();
     }
   }
+  /*
 
   if(seq == 3){
       if(millis() - timer_btw_sq >= TIME_SEQ){
@@ -293,6 +371,7 @@ void loop() {
         time_blink_green = millis();
       }
     }
+    */
 
 
 }
