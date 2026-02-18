@@ -39,7 +39,7 @@ const uint8_t YELLOW_WIRE = 1;
 const uint8_t RED_WIRE = 2;
 const uint8_t GREEN_WIRE_PED = 0;
 const uint8_t RED_WIRE_PED = 1;
-
+int8_t last_seq = -1;
 int8_t seq = 1;
 unsigned long timer_btw_sq = 0;
 const uint32_t TIME_SEQ = 5000;
@@ -69,38 +69,48 @@ const int TIME_TO_BLINK_YELLOW = 20000;
 uint8_t phase = 0;                 // 0,1,2
 unsigned long time_phase = 0;       // timestamp du début de phase
 
+
 void RESET_SEQ(){
-  unsigned long time_multiplexing_1 = 0;
-  unsigned long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
-  bool M = true;
+  // Reset multiplexing state
+  time_multiplexing_1 = millis();
+  time_multiplexing_2 = millis();
+  M = true;
 
-  uint8_t phase = 0;                 // 0,1,2
-  unsigned long time_phase = 0;       // timestamp du début de phase
+  // Reset 3-phase state (si utilisé)
+  phase = 0;
+  time_phase = millis();
 
+  // Reset blink state (partagé)
+  blink_phase_on = true;
+  time_blink_phase = millis();
 }
 void INIT_CROSSWALK(){
   crosswalk_timer = millis();
   crosswalk_state = false;
   digitalWrite(CROSSWALK_IO_E1_E2, LOW);
 }
-void INIT_G_pinmode(uint8_t* ch_traffic_light){
+void INIT_G_pinmode(const uint8_t* ch_traffic_light){
   pinMode(ch_traffic_light[GREEN_WIRE],OUTPUT);
   pinMode(ch_traffic_light[YELLOW_WIRE],OUTPUT);
   pinMode(ch_traffic_light[RED_WIRE],INPUT);
+  digitalWrite(ch_traffic_light[RED_WIRE], LOW); // disable pullup on INPUT
 }
 
 
-void INIT_R_OR_Y_pinmode(uint8_t* ch_traffic_light){
-  pinMode(ch_traffic_light[GREEN_WIRE],INPUT);
-  pinMode(ch_traffic_light[YELLOW_WIRE],OUTPUT);
-  pinMode(ch_traffic_light[RED_WIRE],OUTPUT);
+void INIT_R_OR_Y_pinmode(const uint8_t* ch_traffic_light){
+  pinMode(ch_traffic_light[GREEN_WIRE], INPUT);
+  digitalWrite(ch_traffic_light[GREEN_WIRE], LOW); // disable pullup on INPUT
+  pinMode(ch_traffic_light[YELLOW_WIRE], OUTPUT);
+  pinMode(ch_traffic_light[RED_WIRE], OUTPUT);
 }
 
-void INIT_PED_pinmode(uint8_t* ch_traffic_light){
+void INIT_PED_pinmode(const uint8_t* ch_traffic_light){
   pinMode(ch_traffic_light[GREEN_WIRE],OUTPUT);
   pinMode(ch_traffic_light[YELLOW_WIRE],INPUT);
+  digitalWrite(ch_traffic_light[YELLOW_WIRE], LOW); // disable pullup on INPUT
   pinMode(ch_traffic_light[RED_WIRE],OUTPUT);
 }
+
 
 
 
@@ -515,7 +525,7 @@ void SEQ_3_2(){
       RED_LIGHT(TRAFFIC_LIGHT_A);
       RED_LIGHT(TRAFFIC_LIGHT_B);
       BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_C,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
-      GREEN_LIGHT(TRAFFIC_LIGHT_D)
+      GREEN_LIGHT(TRAFFIC_LIGHT_D);
 
     } else {
       // Fin phase 2 -> start phase 1
@@ -896,6 +906,11 @@ void setup() {
 
 void loop() {
   BLINK_CROSSWALK(CROSSWALK_IO_E1_E2);
+  if (seq != last_seq) {
+    RESET_SEQ();          // très important avec M/phase/blink partagés
+    last_seq = seq;
+  }
+  
 
   switch (seq){
  
@@ -904,9 +919,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 2:
@@ -914,9 +928,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_TO_BLINK){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
   
 
     case 3:
@@ -924,9 +937,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 4:
@@ -934,9 +946,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 5:
@@ -944,9 +955,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_TO_BLINK){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 6:
@@ -954,19 +964,17 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 7:
       SEQ_3_1();
       if(millis() - timer_btw_sq >= TIME_SEQ){
         seq++;
-        timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
+        timer_btw_sq = millis(); 
       }
+      break;
     
 
     case 8:
@@ -974,9 +982,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_TO_BLINK){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 9:
@@ -984,9 +991,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 10:
@@ -994,9 +1000,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 11:
@@ -1004,9 +1009,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_TO_BLINK){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 12:
@@ -1014,9 +1018,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 13:
@@ -1024,9 +1027,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
   
 
     case 14:
@@ -1034,9 +1036,8 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_TO_BLINK){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 15:
@@ -1044,9 +1045,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
 
@@ -1055,9 +1055,8 @@ void loop() {
       if(millis() - timer_btw_sq >= TIME_SEQ){
         seq++;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
     
 
     case 17:
@@ -1065,9 +1064,9 @@ void loop() {
       if(millis() - timer_btw_sq > TIME_TO_BLINK_YELLOW){
         seq = 1;
         timer_btw_sq = millis();
-        RESET_SEQ();
-        break;
       }
+      break;
+      
   }
 
 }
