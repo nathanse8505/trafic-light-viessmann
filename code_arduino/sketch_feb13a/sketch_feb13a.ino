@@ -53,16 +53,22 @@ bool crosswalk_state = false; // false=LOW, true=HIGH
 const int INTERVAL_MULTEPLEXING = 5;//in ms
 long time_multiplexing_1 = 0;
 long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
-
 bool M = true;
-
-
 
 const unsigned long BLINK_GREEN_ON_MS  = 500;  // durée phase ON
 const unsigned long BLINK_GREEN_OFF_MS = 500;  // durée phase OFF
+
+const unsigned long BLINK_YELLOW_ON_MS  = 500;  // durée phase ON
+const unsigned long BLINK_YELLOW_OFF_MS = 500;  // durée phase OFF
 bool blink_phase_on = true;          // true=phase ON, false=phase OFF
 unsigned long time_blink_phase = 0;  // début de la phase actuelle
 const int TIME_TO_BLINK = 2000;
+const int TIME_TO_BLINK_YELLOW = 20000;
+
+// ---- Globals (à mettre en haut) ----
+uint8_t phase = 0;                 // 0,1,2
+unsigned long time_phase = 0;       // timestamp du début de phase
+
 
 void INIT_CROSSWALK(){
   crosswalk_timer = millis();
@@ -98,6 +104,8 @@ void BLINK_CROSSWALK(const uint8_t crosswalk_io) {
     digitalWrite(crosswalk_io, crosswalk_state ? HIGH : LOW);
   }
 }
+
+
 
 
 
@@ -154,11 +162,17 @@ void GREEN_LIGHT_PED_O(uint8_t* ch_traffic_light){
 
 
 
-void BLINK_GREEN_LIGHT_2PHASE(uint8_t* ch_traffic_light) {
-  INIT_G_pinmode(ch_traffic_light);
+void BLINK_LIGHT_2PHASE(int wire,uint8_t* ch_traffic_light,int delay_on,int delay_off) {
+  if (wire == GREEN_WIRE){
+    INIT_G_pinmode(ch_traffic_light);
+  }
+  else{
+    INIT_R_OR_Y_pinmode(ch_traffic_light);
+  }
+  
 
   unsigned long now = millis();
-  unsigned long phase_duration = blink_phase_on ? BLINK_GREEN_ON_MS : BLINK_GREEN_OFF_MS;
+  unsigned long phase_duration = blink_phase_on ? delay_on : delay_off;
 
   // Changement de phase
   if (now - time_blink_phase >= phase_duration) {
@@ -167,7 +181,7 @@ void BLINK_GREEN_LIGHT_2PHASE(uint8_t* ch_traffic_light) {
   }
 
   // Appliquer l’état correspondant à la phase
-  digitalWrite(ch_traffic_light[GREEN_WIRE], blink_phase_on ? HIGH : LOW);
+  digitalWrite(ch_traffic_light[wire], blink_phase_on ? HIGH : LOW);
 }
 
 
@@ -222,9 +236,9 @@ void SEQ_1_2(){
       //Serial.println("enter1");
 
       // ===== PHASE 1 =====
-      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
       RED_LIGHT_PED(TRAFFIC_LIGHT_B);
-      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
       RED_LIGHT_PED(TRAFFIC_LIGHT_D);
 
     } else {
@@ -240,7 +254,7 @@ void SEQ_1_2(){
 
       // ===== PHASE 2 =====
       RED_LIGHT(TRAFFIC_LIGHT_A);
-      BLINK_GREEN_LIGHT_2PHASE(TRAFFIC_LIGHT_B);
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_B,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
       RED_LIGHT(TRAFFIC_LIGHT_C);
       RED_LIGHT(TRAFFIC_LIGHT_D);
 
@@ -258,45 +272,471 @@ void SEQ_1_2(){
     
 }
 
-/*
 
 
-void SEQ_1_3(){
-  if(millis() - time_multiplexing > INTERVAL_MULTEPLEXING){
-    RED_LIGHT_RED_PED(TRAFFIC_LIGHT_A);
-    RED_LIGHT_PED(TRAFFIC_LIGHT_B);
-    RED_LIGHT_RED_PED(TRAFFIC_LIGHT_C);
+// ---- Fonction 3 phases ----
+void SEQ_1_3() {
+  unsigned long now = millis();
+
+  // Switch de phase si durée écoulée
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return; // IMPORTANT: évite d'exécuter la nouvelle phase dans le même loop()
   }
-  else{
-    YELLOW_LIGHT(TRAFFIC_LIGHT_A);
-    YELLOW_LIGHT(TRAFFIC_LIGHT_B);
-    YELLOW_LIGHT(TRAFFIC_LIGHT_C);
+
+  // ===== PHASES =====
+  switch (phase) {
+
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+
+    case 2: // ===== PHASE 3 ===== (à adapter selon ta logique)
+      // Exemple: l'inverse de la phase 2 (ou ce que tu veux)
+      YELLOW_LIGHT(TRAFFIC_LIGHT_A);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_B);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_C);
+      break;
   }
-   
+
 }
 
-void SEQ_2_1(){
-  
-  if(millis() - time_multiplexing > INTERVAL_MULTEPLEXING){
-    RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-    GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
-    RED_LIGHT_PED(TRAFFIC_LIGHT_C);
-    RED_LIGHT_PED(TRAFFIC_LIGHT_D);
-    time_multiplexing = millis();
-  }
-  else{
-    GREEN_LIGHT(TRAFFIC_LIGHT_A);
-    RED_LIGHT(TRAFFIC_LIGHT_B);
-    GREEN_LIGHT(TRAFFIC_LIGHT_C);
-    RED_LIGHT(TRAFFIC_LIGHT_D);
+
+void SEQ_2_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      GREEN_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
   }
 
+  // ===== Toujours actifs (dans les 2 phases) =====
   RED_LIGHT_PED_O(PEDESTRIANS_A3_A4);
   RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
 }
 
 
-*/
+void SEQ_2_2(){
+   unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_A,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+}
+
+// ---- Fonction 3 phases ----
+void SEQ_2_3() {
+  unsigned long now = millis();
+
+  // Switch de phase si durée écoulée
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return; // IMPORTANT: évite d'exécuter la nouvelle phase dans le même loop()
+  }
+
+  // ===== PHASES =====
+  switch (phase) {
+
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+
+    case 2: // ===== PHASE 3 ===== (à adapter selon ta logique)
+      // Exemple: l'inverse de la phase 2 (ou ce que tu veux)
+      YELLOW_LIGHT(TRAFFIC_LIGHT_A);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+  }
+
+}
+
+
+void SEQ_3_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+
+  // ===== Toujours actifs (dans les 2 phases) =====
+  RED_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
+}
+
+void SEQ_3_2(){
+   unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_C,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_D,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
+      
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+}
+
+
+void SEQ_4_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+
+  // ===== Toujours actifs (dans les 2 phases) =====
+  GREEN_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
+}
+
+void SEQ_4_2(){
+   unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_D,BLINK_GREEN_ON_MS, BLINK_GREEN_OFF_MS);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+}
+
+void SEQ_5_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+
+  // ===== Toujours actifs (dans les 2 phases) =====
+  GREEN_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  GREEN_LIGHT_PED_O(PEDESTRIANS_B3_B4);
+}
+
+void SEQ_5_2(){
+   unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_C,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+}
+
+void SEQ_6_1() {
+  unsigned long now = millis();
+
+  if (M == true) {
+    if (now - time_multiplexing_1 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter1");
+
+      // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 1 -> start phase 2
+      M = false;
+      time_multiplexing_2 = now;
+      return; // IMPORTANT: évite d'exécuter la phase 2 dans le même loop()
+    }
+
+  } else { // M == false
+    if (now - time_multiplexing_2 < INTERVAL_MULTEPLEXING) {
+      //Serial.println("enter2");
+
+      // ===== PHASE 2 =====
+      GREEN_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+
+    } else {
+      // Fin phase 2 -> start phase 1
+      M = true;
+      time_multiplexing_1 = now;
+      return; // IMPORTANT
+    }
+  }
+  // ===== Toujours actifs (dans les 2 phases) =====
+  GREEN_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
+}
+
+void SEQ_7() {
+
+     BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_A, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
+     BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_B, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
+     BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_C, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
+     BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_D, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
+   
+  }
+
+
+
+
 
 
 void setup() {
@@ -336,10 +776,8 @@ void loop() {
   BLINK_CROSSWALK(CROSSWALK_IO_E1_E2);
  
   if(seq == 1){
-    if(millis() - timer_btw_sq <= TIME_SEQ){
-      SEQ_1_1();
-    }    
-    else{
+    SEQ_1_1();
+    if(millis() - timer_btw_sq >= TIME_SEQ){
       seq++;
       timer_btw_sq = millis();
     }
@@ -352,26 +790,126 @@ void loop() {
       timer_btw_sq = millis();
     }
   }
-  /*
 
   if(seq == 3){
-      if(millis() - timer_btw_sq >= TIME_SEQ){
-        
-        if (millis() - time_blink_green <= TIME_TO_BLINK){
-          BLINK_GREEN_LIGHT(TRAFFIC_LIGHT_A);
-          BLINK_GREEN_LIGHT(TRAFFIC_LIGHT_C);
-        }
-        else{
-          seq++;
-          timer_btw_sq = millis();
-        }
-      }
-      else{
-        SEQ_2_1();
-        time_blink_green = millis();
-      }
+    //SEQ_1_3();
+    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+      seq++;
+      timer_btw_sq = millis();
     }
-    */
+  }
 
+  if(seq == 4){
+    SEQ_2_1();
+    if(millis() - timer_btw_sq > TIME_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 5){
+    SEQ_2_2();
+    if(millis() - timer_btw_sq >= TIME_TO_BLINK){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 6){
+    //SEQ_2_3();
+    if(millis() - timer_btw_sq > TIME_BTW_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 7){
+    SEQ_3_1();
+    if(millis() - timer_btw_sq >= TIME_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 8){
+    SEQ_3_2();
+    if(millis() - timer_btw_sq > TIME_TO_BLINK){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 9){
+    //SEQ_3_3();
+    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 10){
+    SEQ_4_1();
+    if(millis() - timer_btw_sq > TIME_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 11){
+    SEQ_4_2();
+    if(millis() - timer_btw_sq >= TIME_TO_BLINK){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 12){
+    //SEQ_4_3();
+    if(millis() - timer_btw_sq > TIME_BTW_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 13){
+    SEQ_5_1();
+    if(millis() - timer_btw_sq >= TIME_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 14){
+    SEQ_5_2();
+    if(millis() - timer_btw_sq > TIME_TO_BLINK){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 15){
+    //SEQ_5_3();
+    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+
+  if(seq == 16){
+    SEQ_6_1();
+    if(millis() - timer_btw_sq >= TIME_SEQ){
+      seq++;
+      timer_btw_sq = millis();
+    }
+  }
+
+  if(seq == 17){
+    SEQ_7();
+    if(millis() - timer_btw_sq > TIME_TO_BLINK_YELLOW){
+      seq = 1;
+      timer_btw_sq = millis();
+    }
+  }
 
 }
