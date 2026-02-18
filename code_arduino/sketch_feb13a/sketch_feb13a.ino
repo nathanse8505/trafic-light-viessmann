@@ -41,7 +41,7 @@ const uint8_t GREEN_WIRE_PED = 0;
 const uint8_t RED_WIRE_PED = 1;
 
 int8_t seq = 1;
-long timer_btw_sq = 0;
+unsigned long timer_btw_sq = 0;
 const uint32_t TIME_SEQ = 5000;
 const uint32_t TIME_BTW_SEQ = 1500;
 
@@ -51,8 +51,8 @@ unsigned long crosswalk_timer = 0;
 bool crosswalk_state = false; // false=LOW, true=HIGH
 ///////////////////////////////////
 const int INTERVAL_MULTEPLEXING = 5;//in ms
-long time_multiplexing_1 = 0;
-long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
+unsigned long time_multiplexing_1 = 0;
+unsigned long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
 bool M = true;
 
 const unsigned long BLINK_GREEN_ON_MS  = 500;  // durée phase ON
@@ -69,7 +69,15 @@ const int TIME_TO_BLINK_YELLOW = 20000;
 uint8_t phase = 0;                 // 0,1,2
 unsigned long time_phase = 0;       // timestamp du début de phase
 
+void RESET_SEQ(){
+  unsigned long time_multiplexing_1 = 0;
+  unsigned long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
+  bool M = true;
 
+  uint8_t phase = 0;                 // 0,1,2
+  unsigned long time_phase = 0;       // timestamp du début de phase
+
+}
 void INIT_CROSSWALK(){
   crosswalk_timer = millis();
   crosswalk_state = false;
@@ -165,9 +173,11 @@ void GREEN_LIGHT_PED_O(uint8_t* ch_traffic_light){
 void BLINK_LIGHT_2PHASE(int wire,uint8_t* ch_traffic_light,int delay_on,int delay_off) {
   if (wire == GREEN_WIRE){
     INIT_G_pinmode(ch_traffic_light);
+    digitalWrite(ch_traffic_light[YELLOW_WIRE],LOW);
   }
   else{
     INIT_R_OR_Y_pinmode(ch_traffic_light);
+    digitalWrite(ch_traffic_light[RED_WIRE],LOW);
   }
   
 
@@ -419,6 +429,7 @@ void SEQ_2_3() {
 
     case 1: // ===== PHASE 2 =====
       RED_LIGHT(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT(TRAFFIC_LIGHT_C);
       RED_LIGHT(TRAFFIC_LIGHT_D);
       break;
 
@@ -504,8 +515,7 @@ void SEQ_3_2(){
       RED_LIGHT(TRAFFIC_LIGHT_A);
       RED_LIGHT(TRAFFIC_LIGHT_B);
       BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_C,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
-      BLINK_LIGHT_2PHASE(GREEN_WIRE,TRAFFIC_LIGHT_D,BLINK_GREEN_ON_MS,BLINK_GREEN_OFF_MS);
-      
+      GREEN_LIGHT(TRAFFIC_LIGHT_D)
 
     } else {
       // Fin phase 2 -> start phase 1
@@ -515,6 +525,44 @@ void SEQ_3_2(){
     }
   }
 }
+
+// ---- Fonction 3 phases ----
+void SEQ_3_3() {
+  unsigned long now = millis();
+
+  // Switch de phase si durée écoulée
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return; // IMPORTANT: évite d'exécuter la nouvelle phase dans le même loop()
+  }
+
+  // ===== PHASES =====
+  switch (phase) {
+
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      GREEN_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+
+    case 2: // ===== PHASE 3 ===== (à adapter selon ta logique)
+      // Exemple: l'inverse de la phase 2 (ou ce que tu veux)
+      
+      YELLOW_LIGHT(TRAFFIC_LIGHT_C);
+      break;
+  }
+
+}
+
 
 
 void SEQ_4_1() {
@@ -600,6 +648,44 @@ void SEQ_4_2(){
   }
 }
 
+// ---- Fonction 3 phases ----
+void SEQ_4_3() {
+  unsigned long now = millis();
+
+  // Switch de phase si durée écoulée
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return; // IMPORTANT: évite d'exécuter la nouvelle phase dans le même loop()
+  }
+
+  // ===== PHASES =====
+  switch (phase) {
+
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      break;
+
+    case 2: // ===== PHASE 3 ===== (à adapter selon ta logique)
+      // Exemple: l'inverse de la phase 2 (ou ce que tu veux)
+      YELLOW_LIGHT(TRAFFIC_LIGHT_C);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+  }
+
+}
+
+
+
 void SEQ_5_1() {
   unsigned long now = millis();
 
@@ -681,6 +767,42 @@ void SEQ_5_2(){
       return; // IMPORTANT
     }
   }
+}
+
+// ---- Fonction 3 phases ----
+void SEQ_5_3() {
+  unsigned long now = millis();
+
+  // Switch de phase si durée écoulée
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return; // IMPORTANT: évite d'exécuter la nouvelle phase dans le même loop()
+  }
+
+  // ===== PHASES =====
+  switch (phase) {
+
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_A);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+
+    case 2: // ===== PHASE 3 ===== (à adapter selon ta logique)
+      // Exemple: l'inverse de la phase 2 (ou ce que tu veux)
+      YELLOW_LIGHT(TRAFFIC_LIGHT_A);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_C);
+      break;
+  }
+
 }
 
 void SEQ_6_1() {
@@ -774,142 +896,178 @@ void setup() {
 
 void loop() {
   BLINK_CROSSWALK(CROSSWALK_IO_E1_E2);
+
+  switch (seq){
  
-  if(seq == 1){
-    SEQ_1_1();
-    if(millis() - timer_btw_sq >= TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 1:
+      SEQ_1_1();
+      if(millis() - timer_btw_sq >= TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 2){
-    SEQ_1_2();
-    if(millis() - timer_btw_sq > TIME_TO_BLINK){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 2:
+      SEQ_1_2();
+      if(millis() - timer_btw_sq > TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+  
 
-  if(seq == 3){
-    //SEQ_1_3();
-    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 3:
+      SEQ_1_3();
+      if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 4){
-    SEQ_2_1();
-    if(millis() - timer_btw_sq > TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 4:
+      SEQ_2_1();
+      if(millis() - timer_btw_sq > TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 5){
-    SEQ_2_2();
-    if(millis() - timer_btw_sq >= TIME_TO_BLINK){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 5:
+      SEQ_2_2();
+      if(millis() - timer_btw_sq >= TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 6){
-    //SEQ_2_3();
-    if(millis() - timer_btw_sq > TIME_BTW_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 6:
+      SEQ_2_3();
+      if(millis() - timer_btw_sq > TIME_BTW_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 7){
-    SEQ_3_1();
-    if(millis() - timer_btw_sq >= TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 7:
+      SEQ_3_1();
+      if(millis() - timer_btw_sq >= TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 8){
-    SEQ_3_2();
-    if(millis() - timer_btw_sq > TIME_TO_BLINK){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 8:
+      SEQ_3_2();
+      if(millis() - timer_btw_sq > TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 9){
-    //SEQ_3_3();
-    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 9:
+      //SEQ_3_3();
+      if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 10){
-    SEQ_4_1();
-    if(millis() - timer_btw_sq > TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 10:
+      SEQ_4_1();
+      if(millis() - timer_btw_sq > TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 11){
-    SEQ_4_2();
-    if(millis() - timer_btw_sq >= TIME_TO_BLINK){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 11:
+      SEQ_4_2();
+      if(millis() - timer_btw_sq >= TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 12){
-    //SEQ_4_3();
-    if(millis() - timer_btw_sq > TIME_BTW_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 12:
+      //SEQ_4_3();
+      if(millis() - timer_btw_sq > TIME_BTW_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 13){
-    SEQ_5_1();
-    if(millis() - timer_btw_sq >= TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 13:
+      SEQ_5_1();
+      if(millis() - timer_btw_sq >= TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+  
 
-  if(seq == 14){
-    SEQ_5_2();
-    if(millis() - timer_btw_sq > TIME_TO_BLINK){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 14:
+      SEQ_5_2();
+      if(millis() - timer_btw_sq > TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 15){
-    //SEQ_5_3();
-    if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 15:
+      //SEQ_5_3();
+      if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
 
-  if(seq == 16){
-    SEQ_6_1();
-    if(millis() - timer_btw_sq >= TIME_SEQ){
-      seq++;
-      timer_btw_sq = millis();
-    }
-  }
+    case 16:
+      SEQ_6_1();
+      if(millis() - timer_btw_sq >= TIME_SEQ){
+        seq++;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
+    
 
-  if(seq == 17){
-    SEQ_7();
-    if(millis() - timer_btw_sq > TIME_TO_BLINK_YELLOW){
-      seq = 1;
-      timer_btw_sq = millis();
-    }
+    case 17:
+      SEQ_7();
+      if(millis() - timer_btw_sq > TIME_TO_BLINK_YELLOW){
+        seq = 1;
+        timer_btw_sq = millis();
+        RESET_SEQ();
+        break;
+      }
   }
 
 }
