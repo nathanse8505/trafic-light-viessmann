@@ -11,16 +11,16 @@
 #define TRAFFIC_Y_IO_C 10
 #define TRAFFIC_R_IO_C 11
 
-#define TRAFFIC_G_IO_D 12
-#define TRAFFIC_Y_IO_D A0
-#define TRAFFIC_R_IO_D A1
+#define TRAFFIC_G_IO_D A0
+#define TRAFFIC_Y_IO_D A1
+#define TRAFFIC_R_IO_D A2
 
-#define PED_R_IO_A3_A4 A2
-#define PED_G_IO_A3_A4 A3
+#define PED_R_IO_A3_A4 A3
+#define PED_G_IO_A3_A4 A4
 
 
-#define PED_R_IO_B3_B4 A4
-#define PED_G_IO_B3_B4 A5
+#define PED_R_IO_B3_B4 A5
+#define PED_G_IO_B3_B4 12
 
 
 
@@ -50,13 +50,13 @@ const uint16_t CROSSWALK_DELAY = 1000;
 unsigned long crosswalk_timer = 0;
 bool crosswalk_state = false; // false=LOW, true=HIGH
 ///////////////////////////////////
-const int INTERVAL_MULTEPLEXING = 5;//in ms
+const int INTERVAL_MULTEPLEXING = 6;//in ms
 unsigned long time_multiplexing_1 = 0;
 unsigned long time_multiplexing_2 = INTERVAL_MULTEPLEXING;
 bool M = true;
 
-const unsigned long BLINK_GREEN_ON_MS  = 500;  // durée phase ON
-const unsigned long BLINK_GREEN_OFF_MS = 500;  // durée phase OFF
+const unsigned long BLINK_GREEN_ON_MS  = 300;  // durée phase ON
+const unsigned long BLINK_GREEN_OFF_MS = 300;  // durée phase OFF
 
 const unsigned long BLINK_YELLOW_ON_MS  = 500;  // durée phase ON
 const unsigned long BLINK_YELLOW_OFF_MS = 500;  // durée phase OFF
@@ -385,7 +385,7 @@ void SEQ_2_2(){
 
       // ===== PHASE 1 =====
       RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
       RED_LIGHT_PED(TRAFFIC_LIGHT_D);
 
@@ -432,7 +432,7 @@ void SEQ_2_3() {
 
     case 0: // ===== PHASE 1 =====
       RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
       RED_LIGHT_PED(TRAFFIC_LIGHT_D);
       break;
@@ -504,10 +504,10 @@ void SEQ_3_2(){
       //Serial.println("enter1");
 
       // ===== PHASE 1 =====
-      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
 
     } else {
       // Fin phase 1 -> start phase 2
@@ -551,16 +551,15 @@ void SEQ_3_3() {
   switch (phase) {
 
     case 0: // ===== PHASE 1 =====
-      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
       break;
 
     case 1: // ===== PHASE 2 =====
       RED_LIGHT(TRAFFIC_LIGHT_A);
       RED_LIGHT(TRAFFIC_LIGHT_B);
-      RED_LIGHT(TRAFFIC_LIGHT_C);
       GREEN_LIGHT(TRAFFIC_LIGHT_D);
       break;
 
@@ -626,10 +625,10 @@ void SEQ_4_2(){
       //Serial.println("enter1");
 
       // ===== PHASE 1 =====
-      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
 
     } else {
       // Fin phase 1 -> start phase 2
@@ -673,10 +672,10 @@ void SEQ_4_3() {
   switch (phase) {
 
     case 0: // ===== PHASE 1 =====
-      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_D);
       break;
 
     case 1: // ===== PHASE 2 =====
@@ -748,7 +747,7 @@ void SEQ_5_2(){
 
       // ===== PHASE 1 =====
       RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
       RED_LIGHT_PED(TRAFFIC_LIGHT_D);
 
@@ -795,7 +794,7 @@ void SEQ_5_3() {
 
     case 0: // ===== PHASE 1 =====
       RED_LIGHT_PED(TRAFFIC_LIGHT_A);
-      RED_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
       RED_LIGHT_PED(TRAFFIC_LIGHT_C);
       RED_LIGHT_PED(TRAFFIC_LIGHT_D);
       break;
@@ -987,7 +986,7 @@ void loop() {
     
 
     case 9:
-      //SEQ_3_3();
+      SEQ_3_3();
       if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
@@ -1014,7 +1013,7 @@ void loop() {
     
 
     case 12:
-      //SEQ_4_3();
+      SEQ_4_3();
       if(millis() - timer_btw_sq > TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
@@ -1041,7 +1040,7 @@ void loop() {
     
 
     case 15:
-      //SEQ_5_3();
+      SEQ_5_3();
       if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
         seq++;
         timer_btw_sq = millis();
