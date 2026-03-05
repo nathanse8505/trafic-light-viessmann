@@ -124,9 +124,6 @@ void BLINK_CROSSWALK(const uint8_t crosswalk_io) {
 }
 
 
-
-
-
 void RED_LIGHT(uint8_t* ch_traffic_light){
   INIT_R_OR_Y_pinmode(ch_traffic_light);
   digitalWrite(ch_traffic_light[YELLOW_WIRE], LOW);
