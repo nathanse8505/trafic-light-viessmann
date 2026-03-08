@@ -40,7 +40,8 @@ void loop() {
     RESET_SEQ();         
     last_seq = seq;
   }
-  
+
+  //seq = 16;//1 4 7 10 13 16 
 
   switch (seq){
  
@@ -187,7 +188,7 @@ void loop() {
         timer_btw_sq = millis();
       }
       break;
-    
+   
 
     case 17:
       SEQ_7();

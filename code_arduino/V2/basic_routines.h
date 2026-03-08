@@ -106,6 +106,11 @@ void GREEN_LIGHT_PED_O(uint8_t* ch_traffic_light){
   digitalWrite(ch_traffic_light[RED_WIRE_PED], LOW);
 }
 
+void BLANK_LIGHT_PED_O(uint8_t* ch_traffic_light){
+  digitalWrite(ch_traffic_light[GREEN_WIRE_PED], LOW);
+  digitalWrite(ch_traffic_light[RED_WIRE_PED], LOW);
+}
+
 
 
 void BLINK_LIGHT_2PHASE(int wire,uint8_t* ch_traffic_light,int delay_on,int delay_off) {

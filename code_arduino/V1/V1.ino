@@ -1,23 +1,22 @@
 #define CROSSWALK_IO_E1_E2 2 
-#define TRAFFIC_G_IO_A 3
+#define TRAFFIC_R_IO_A 3
 #define TRAFFIC_Y_IO_A 4
-#define TRAFFIC_R_IO_A 5
+#define TRAFFIC_G_IO_A 5
 
-#define TRAFFIC_G_IO_B 6
+#define TRAFFIC_R_IO_B 6
 #define TRAFFIC_Y_IO_B 7
-#define TRAFFIC_R_IO_B 8
+#define TRAFFIC_G_IO_B 8
 
-#define TRAFFIC_G_IO_C 9
+#define TRAFFIC_R_IO_C 9
 #define TRAFFIC_Y_IO_C 10
-#define TRAFFIC_R_IO_C 11
+#define TRAFFIC_G_IO_C 11
 
-#define TRAFFIC_G_IO_D A0
+#define TRAFFIC_R_IO_D A0
 #define TRAFFIC_Y_IO_D A1
-#define TRAFFIC_R_IO_D A2
+#define TRAFFIC_G_IO_D A2
 
 #define PED_R_IO_A3_A4 A3
 #define PED_G_IO_A3_A4 A4
-
 
 #define PED_R_IO_B3_B4 A5
 #define PED_G_IO_B3_B4 12
@@ -174,6 +173,11 @@ void GREEN_LIGHT_PED_O(uint8_t* ch_traffic_light){
   digitalWrite(ch_traffic_light[GREEN_WIRE_PED], HIGH);
   digitalWrite(ch_traffic_light[RED_WIRE_PED], LOW);
 }
+void BLANK_LIGHT_PED_O(uint8_t* ch_traffic_light){
+  digitalWrite(ch_traffic_light[GREEN_WIRE_PED], LOW);
+  digitalWrite(ch_traffic_light[RED_WIRE_PED], LOW);
+}
+
 
 
 
@@ -859,6 +863,9 @@ void SEQ_7() {
      BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_B, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
      BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_C, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
      BLINK_LIGHT_2PHASE(YELLOW_WIRE,TRAFFIC_LIGHT_D, BLINK_YELLOW_ON_MS, BLINK_YELLOW_OFF_MS);
+
+     BLANK_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+     BLANK_LIGHT_PED_O(PEDESTRIANS_B3_B4);
    
   }
 

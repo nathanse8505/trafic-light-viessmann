@@ -21,29 +21,27 @@
  */
 
 #define CROSSWALK_IO_E1_E2 2 
-#define TRAFFIC_G_IO_A 3
+#define TRAFFIC_R_IO_A 3
 #define TRAFFIC_Y_IO_A 4
-#define TRAFFIC_R_IO_A 5
+#define TRAFFIC_G_IO_A 5
 
-#define TRAFFIC_G_IO_B 6
+#define TRAFFIC_R_IO_B 6
 #define TRAFFIC_Y_IO_B 7
-#define TRAFFIC_R_IO_B 8
+#define TRAFFIC_G_IO_B 8
 
-#define TRAFFIC_G_IO_C 9
+#define TRAFFIC_R_IO_C 9
 #define TRAFFIC_Y_IO_C 10
-#define TRAFFIC_R_IO_C 11
+#define TRAFFIC_G_IO_C 11
 
-#define TRAFFIC_G_IO_D A0
+#define TRAFFIC_R_IO_D A0
 #define TRAFFIC_Y_IO_D A1
-#define TRAFFIC_R_IO_D A2
+#define TRAFFIC_G_IO_D A2
 
 #define PED_R_IO_A3_A4 A3
 #define PED_G_IO_A3_A4 A4
 
-
 #define PED_R_IO_B3_B4 A5
 #define PED_G_IO_B3_B4 12
-
 
 
 const uint8_t TRAFFIC_LIGHT_A[3] = {TRAFFIC_G_IO_A,TRAFFIC_Y_IO_A,TRAFFIC_R_IO_A};// pedestrian A1 connected to pedestrian A2
@@ -77,7 +75,7 @@ const uint32_t TIME_SEQ        = 5000; // for sequence SEQ_X_1
 const uint32_t TIME_TO_BLINK   = 2000; // for sequence SEQ_X_2
 const uint32_t TIME_BTW_SEQ    = 1500; // for sequence SEQ_X_3
 const int TIME_TO_BLINK_YELLOW = 20000;// for sequence SEQ_7
-const int INTERVAL_MULTEPLEXING = 6;//in ms
+const int INTERVAL_MULTEPLEXING = 3;//in ms
 ////////////////BLINK //////////////
 const unsigned long BLINK_GREEN_ON_MS  = 300;  // durée phase ON
 const unsigned long BLINK_GREEN_OFF_MS = 300;  // durée phase OFF
