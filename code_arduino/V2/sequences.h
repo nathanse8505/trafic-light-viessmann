@@ -217,6 +217,9 @@ void SEQ_3_1() {
       GREEN_LIGHT(TRAFFIC_LIGHT_D);
       break;
   }
+  // Toujours actifs
+  //RED_LIGHT_PED_O(PEDESTRIANS_A3_A4);
+  //RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
 
 }
 
@@ -488,6 +491,64 @@ void SEQ_6_1() {
   GREEN_LIGHT_PED_O(PEDESTRIANS_A3_A4);
   RED_LIGHT_PED_O(PEDESTRIANS_B3_B4);
 }
+
+void SEQ_6_2() {
+  unsigned long now = millis();
+
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 2;
+    time_phase = now;
+    return;
+  }
+
+  switch (phase) {
+    case 0: // PHASE 1
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // PHASE 2
+      BLINK_LIGHT_2PHASE(GREEN_WIRE, TRAFFIC_LIGHT_A, BLINK_GREEN_ON_MS, BLINK_GREEN_OFF_MS);
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+      
+      break;
+  }
+}
+
+void SEQ_6_3() {
+  unsigned long now = millis();
+
+  if (now - time_phase >= INTERVAL_MULTEPLEXING) {
+    phase = (phase + 1) % 3;
+    time_phase = now;
+    return;
+  }
+
+  switch (phase) {
+    case 0: // ===== PHASE 1 =====
+      RED_LIGHT_PED(TRAFFIC_LIGHT_A);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_B);
+      GREEN_LIGHT_PED(TRAFFIC_LIGHT_C);
+      RED_LIGHT_PED(TRAFFIC_LIGHT_D);
+      break;
+
+    case 1: // ===== PHASE 2 =====
+      RED_LIGHT(TRAFFIC_LIGHT_B);
+      RED_LIGHT(TRAFFIC_LIGHT_C);
+      RED_LIGHT(TRAFFIC_LIGHT_D);
+      break;
+
+    case 2: // ===== PHASE 3 =====
+      YELLOW_LIGHT(TRAFFIC_LIGHT_A);
+      YELLOW_LIGHT(TRAFFIC_LIGHT_B);
+      break;
+  }
+}
+
 
 // ============================================================================
 // SEQ 7

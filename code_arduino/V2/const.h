@@ -71,14 +71,14 @@ const uint16_t CROSSWALK_DELAY = 1000;
 unsigned long crosswalk_timer = 0;
 bool crosswalk_state = false; // false=LOW, true=HIGH
 /////////////////// SEQUENCE ////////////////
-const uint32_t TIME_SEQ        = 5000; // for sequence SEQ_X_1
-const uint32_t TIME_TO_BLINK   = 2000; // for sequence SEQ_X_2
+const uint32_t TIME_SEQ        = 7000; // for sequence SEQ_X_1
+const uint32_t TIME_TO_BLINK   = 3200; // for sequence SEQ_X_2
 const uint32_t TIME_BTW_SEQ    = 1500; // for sequence SEQ_X_3
 const int TIME_TO_BLINK_YELLOW = 20000;// for sequence SEQ_7
 const int INTERVAL_MULTEPLEXING = 3;//in ms
 ////////////////BLINK //////////////
-const unsigned long BLINK_GREEN_ON_MS  = 300;  // durée phase ON
-const unsigned long BLINK_GREEN_OFF_MS = 300;  // durée phase OFF
+const unsigned long BLINK_GREEN_ON_MS  = 500;  // durée phase ON
+const unsigned long BLINK_GREEN_OFF_MS = 500;  // durée phase OFF
 
 const unsigned long BLINK_YELLOW_ON_MS  = 500;  // durée phase ON
 const unsigned long BLINK_YELLOW_OFF_MS = 500;  // durée phase OFF
@@ -90,5 +90,7 @@ unsigned long time_blink_phase = 0;  // début de la phase actuelle
 uint8_t phase = 0;                 // 0,1,2
 unsigned long time_phase = 0;       // timestamp du début de phase
 
+const int NUMBER_OF_LOOP_SEQ = 5;
+int loop_seq = 0;
 
 #endif

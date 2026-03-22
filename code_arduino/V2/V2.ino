@@ -41,7 +41,7 @@ void loop() {
     last_seq = seq;
   }
 
-  //seq = 16;//1 4 7 10 13 16 
+  //seq = 1;//1 4 7 10 13 16 
 
   switch (seq){
  
@@ -188,16 +188,40 @@ void loop() {
         timer_btw_sq = millis();
       }
       break;
-   
 
     case 17:
+      SEQ_6_2();
+      if(millis() - timer_btw_sq >= TIME_TO_BLINK){
+        seq++;
+        timer_btw_sq = millis();
+      }
+      break;
+
+    case 18:
+      SEQ_6_3();
+      if(millis() - timer_btw_sq >= TIME_BTW_SEQ){
+        seq = 1;
+        loop_seq++;
+        timer_btw_sq = millis();
+        Serial.print("loop_seq ");
+        Serial.println(loop_seq);
+        if (loop_seq >= NUMBER_OF_LOOP_SEQ){
+          seq = 19;
+          loop_seq =0;
+        }
+      }
+      break;
+   
+
+    case 19:
       SEQ_7();
-      if(millis() - timer_btw_sq > TIME_TO_BLINK_YELLOW){
+      if(millis() - timer_btw_sq >= TIME_TO_BLINK_YELLOW){
         seq = 1;
         timer_btw_sq = millis();
       }
       break;
       
   }
+  //Serial.println(seq);
 
 }
